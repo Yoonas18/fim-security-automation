@@ -70,31 +70,25 @@ This is a practical demonstration of:
 ## 📁 Project structure
 
 ```
-fim-security-automation/
-│
+FIM-Watchdog/
 ├── agent/
-│   ├── fim_monitor.py          # Main FIM monitoring agent
-│   ├── hasher.py               # SHA-256 hashing logic
-│   ├── baseline.py             # Baseline creation and management
-│   └── config.py               # Configuration (paths to monitor, API URL)
-│
-├── server/
-│   ├── main.py                 # FastAPI event collection server
-│   ├── models.py               # Event data models
-│   └── logger.py               # Event logging to file / DB
-│
-├── n8n-workflows/
-│   └── fim_alert_workflow.json # n8n workflow export (import directly into n8n)
-│
+│   ├── agent.py                  ← improved with better error messages & comments
+│   ├── agent_config.json         ← safe generic paths (your Desktop path removed)
+│   └── agent_config.example.json ← template for other users
+├── backend/
+│   ├── main.py                   ← webhook moved to env variable (no hardcoded URL)
+│   ├── database.py               ← unchanged (was already clean)
+│   ├── events.py                 ← unchanged
+│   └── schemas.py                ← unchanged
+├── frontend/
+│   └── index.html                ← unchanged (your UI is great)
 ├── docs/
-│   ├── screenshots/            # Screenshots of alerts and detections
-│   └── setup-guide.md          # Detailed setup walkthrough
-│
-├── requirements.txt
-└── README.md
-```
-
----
+│   └── SCREENSHOTS.md            ← guide for what screenshots to add
+├── README.md                     ← full professional README
+├── requirements.txt              ← all dependencies listed
+├── .gitignore                    ← blocks .db files, __pycache__, config
+├── .env.example                  ← shows how to set N8N_WEBHOOK_URL safely
+└── LICENSE                       ← MIT license
 
 ## 🚀 Getting started
 
