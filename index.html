@@ -1,0 +1,212 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>SecurityDog FIM — Live Demo</title>
+  <style>
+    :root {
+      --bg: #081018;
+      --accent: #00ffd1;
+      --muted: #6ee7d2;
+      --card: #06202a;
+      --danger: #ff4d6d;
+      --warning: #ffb86b;
+      --success: #6bffb8;
+    }
+    body {
+      background: linear-gradient(180deg, #05060a 0%, var(--bg) 100%);
+      color: var(--accent);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system,
+        "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      margin: 0;
+      padding: 18px;
+    }
+    header { display:flex; align-items:center; gap:16px; }
+    h1 { margin:0; font-size:20px; letter-spacing:0.6px; }
+    .badge {
+      background:var(--card);
+      padding:6px 10px;
+      border-radius:8px;
+      color:var(--muted);
+      font-size:12px;
+    }
+    .container { display:flex; gap:18px; margin-top:18px; }
+    .left { width:420px; }
+    .right { flex:1; min-width:360px; }
+    .alerts {
+      display:flex;
+      flex-direction:column-reverse;
+      gap:10px;
+      max-height:70vh;
+      overflow:auto;
+      padding-right:8px;
+    }
+    .alert {
+      background:linear-gradient(90deg,
+        rgba(255,255,255,0.02),
+        rgba(255,255,255,0.01));
+      border:1px solid rgba(0,255,210,0.08);
+      padding:12px;
+      border-radius:10px;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.6);
+    }
+    .agent { font-weight:700; color:var(--accent); }
+    .file {
+      color:#bdebdc;
+      font-family: monospace;
+      font-size:13px;
+      margin-top:6px;
+      display:block;
+    }
+    .meta {
+      margin-top:8px;
+      font-size:12px;
+      color:var(--muted);
+      display:flex;
+      gap:10px;
+    }
+    .history {
+      background:var(--card);
+      padding:12px;
+      border-radius:8px;
+      max-height:70vh;
+      overflow:auto;
+    }
+    .controls { display:flex; gap:8px; margin-top:12px; }
+    button {
+      background:transparent;
+      border:1px solid rgba(0,255,210,0.06);
+      padding:8px 10px;
+      color:var(--accent);
+      border-radius:8px;
+      cursor:pointer;
+    }
+    .status {
+      margin-left:auto;
+      color:var(--muted);
+      font-size:13px;
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <div>
+      <h1>SecurityDog — File Integrity Monitor (Expo Demo)</h1>
+      <div class="badge">Live Alerts</div>
+    </div>
+    <div class="status" id="status">Connecting...</div>
+  </header>
+
+  <div class="container">
+    <div class="left">
+      <div style="margin-top:12px; font-size:13px; color:var(--muted)">
+        Live stream
+      </div>
+      <div id="alerts" class="alerts"></div>
+
+      <div class="controls">
+        <button id="clear">Clear</button>
+        <button id="reload">Reload history</button>
+      </div>
+    </div>
+
+    <div class="right">
+      <div style="font-size:13px; color:var(--muted); margin-bottom:8px">
+        Recent events
+      </div>
+      <div id="history" class="history"></div>
+    </div>
+  </div>
+
+  <script>
+    const alertsEl = document.getElementById("alerts");
+    const historyEl = document.getElementById("history");
+    const statusEl = document.getElementById("status");
+    const clearBtn = document.getElementById("clear");
+    const reloadBtn = document.getElementById("reload");
+
+    function renderAlert(data) {
+      const div = document.createElement("div");
+      div.className = "alert";
+      const time = data.time
+        ? (' · ' + new Date(data.time).toLocaleString())
+        : '';
+      div.innerHTML = `
+        <div class="agent">${data.agent || 'unknown'}</div>
+        <div class="file">${data.file}</div>
+        <div class="meta">
+          <span>${data.event}</span>
+          <span>${time}</span>
+        </div>`;
+      alertsEl.prepend(div);
+    }
+
+    function renderHistory(items) {
+      historyEl.innerHTML = '';
+      items.forEach(item => {
+        const row = document.createElement('div');
+        row.style.padding = '8px 0';
+        row.style.borderBottom =
+          '1px solid rgba(255,255,255,0.02)';
+        const time = item.time
+          ? new Date(item.time).toLocaleString()
+          : '';
+        row.innerHTML = `
+          <div style="font-weight:600">
+            ${item.agent} · ${item.event}
+          </div>
+          <div style="font-family:monospace;color:#bdebdc;margin-top:6px">
+            ${item.file}
+          </div>
+          <div style="font-size:12px;color:var(--muted);margin-top:6px">
+            ${time}
+          </div>`;
+        historyEl.appendChild(row);
+      });
+    }
+
+    async function loadHistory() {
+      try {
+        const res = await fetch('/api/history');
+        const data = await res.json();
+        renderHistory(data);
+      } catch (e) {
+        console.error('Failed to load history', e);
+      }
+    }
+
+    let evt;
+    function connect() {
+      statusEl.textContent = 'Connecting...';
+      evt = new EventSource('/api/events');
+
+      evt.onopen = () => {
+        statusEl.textContent = 'Connected';
+        statusEl.style.color = '#6bffb8';
+      };
+
+      evt.onmessage = (msg) => {
+        try {
+          const data = JSON.parse(msg.data);
+          renderAlert(data);
+        } catch (e) {}
+      };
+
+      evt.onerror = () => {
+        statusEl.textContent = 'Disconnected — retrying...';
+        statusEl.style.color = '#ffb86b';
+        evt.close();
+        setTimeout(connect, 2000);
+      };
+    }
+
+    clearBtn.onclick = () => alertsEl.innerHTML = '';
+    reloadBtn.onclick = loadHistory;
+
+    loadHistory();
+    connect();
+  </script>
+</body>
+</html>
