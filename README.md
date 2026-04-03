@@ -72,22 +72,19 @@ This is a practical demonstration of:
 ```
 FIM-Watchdog/
 ├── agent/
-│   ├── agent.py                  ← improved with better error messages & comments
-│   ├── agent_config.json         ← safe generic paths (your Desktop path removed)
+│   ├── agent.py                  
+│   ├── agent_config.json         
 │   └── agent_config.example.json ← template for other users
 ├── backend/
-│   ├── main.py                   ← webhook moved to env variable (no hardcoded URL)
-│   ├── database.py               ← unchanged (was already clean)
-│   ├── events.py                 ← unchanged
-│   └── schemas.py                ← unchanged
+│   ├── main.py                   
+│   ├── database.py               
+│   ├── events.py                 
+│   └── schemas.py                
 ├── frontend/
-│   └── index.html                ← unchanged (your UI is great)
-├── docs/
-│   └── SCREENSHOTS.md            ← guide for what screenshots to add
+│   └── index.html                ← UI
+            
 ├── README.md                     ← full professional README
-├── requirements.txt              ← all dependencies listed
 ├── .gitignore                    ← blocks .db files, __pycache__, config
-├── .env.example                  ← shows how to set N8N_WEBHOOK_URL safely
 └── LICENSE                       ← MIT license
 
 ## 🚀 Getting started
