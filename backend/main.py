@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Annotated
 
 import httpx
-from fastapi import Cookie, Depends, FastAPI, Header, HTTPException, Query, Response, status
+from fastapi import Cookie, Depends, FastAPI, Header, HTTPException, Query, Request, Response, status
 from fastapi.responses import StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -114,7 +114,7 @@ async def report(data: Report, _: Annotated[None, Depends(require_agent_key)]):
 
 
 @app.get("/api/events")
-async def sse(request, _: Annotated[None, Depends(require_dashboard_auth)]):
+async def sse(request: Request, _: Annotated[None, Depends(require_dashboard_auth)]):
     return StreamingResponse(event_stream(request), media_type="text/event-stream")
 
 
