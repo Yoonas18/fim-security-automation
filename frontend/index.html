@@ -262,9 +262,6 @@
     }
 
     main {
-      display: grid;
-      grid-template-columns: 42% 1fr;
-      gap: 14px;
       padding: 16px 22px 22px;
       min-height: 0;
     }
@@ -442,7 +439,7 @@
           <div class="subtitle">Integrity monitoring command center</div>
         </div>
       </div>
-      <div id="status" class="status">Connecting...</div>
+      <div id="status" class="status">Auto refresh on</div>
       <button id="logout">Logout</button>
     </header>
 
@@ -472,14 +469,6 @@
     <main>
       <section class="pane">
         <div class="pane-title">
-          <span>Live alerts</span>
-          <button id="clearLive">Clear</button>
-        </div>
-        <div id="liveList" class="list"></div>
-      </section>
-
-      <section class="pane">
-        <div class="pane-title">
           <span>Event history</span>
           <span id="historyCount">0 items</span>
         </div>
@@ -494,16 +483,14 @@
     const loginForm = document.getElementById("loginForm");
     const loginError = document.getElementById("loginError");
     const statusEl = document.getElementById("status");
-    const liveList = document.getElementById("liveList");
     const historyList = document.getElementById("historyList");
     const historyCount = document.getElementById("historyCount");
     const agentFilter = document.getElementById("agentFilter");
     const eventFilter = document.getElementById("eventFilter");
     const limitFilter = document.getElementById("limitFilter");
     const reloadBtn = document.getElementById("reload");
-    const clearLiveBtn = document.getElementById("clearLive");
     const logoutBtn = document.getElementById("logout");
-    let eventSource;
+    let refreshTimer;
 
     function text(value) {
       return value === null || value === undefined || value === "" ? "-" : String(value);
@@ -587,41 +574,29 @@
       const params = new URLSearchParams({ limit: limitFilter.value });
       if (eventFilter.value) params.set("event", eventFilter.value);
       if (agentFilter.value.trim()) params.set("agent", agentFilter.value.trim());
-      const items = await api(`/api/history?${params.toString()}`);
-      renderList(historyList, items);
-      historyCount.textContent = `${items.length} items`;
-      await loadStats();
+      try {
+        const items = await api(`/api/history?${params.toString()}`);
+        renderList(historyList, items);
+        historyCount.textContent = `${items.length} items`;
+        await loadStats();
+        statusEl.textContent = "Auto refresh on";
+        statusEl.style.color = "var(--green)";
+      } catch {
+        statusEl.textContent = "Refresh failed, retrying...";
+        statusEl.style.color = "var(--yellow)";
+      }
     }
 
-    function connectEvents() {
-      if (eventSource) eventSource.close();
-      statusEl.textContent = "Connecting...";
-      eventSource = new EventSource("/api/events");
-
-      eventSource.onopen = () => {
-        statusEl.textContent = "Connected";
-        statusEl.style.color = "var(--green)";
-      };
-
-      eventSource.onmessage = async (message) => {
-        const event = JSON.parse(message.data);
-        liveList.prepend(makeEventRow(event));
-        await loadStats();
-      };
-
-      eventSource.onerror = () => {
-        statusEl.textContent = "Disconnected, retrying...";
-        statusEl.style.color = "var(--yellow)";
-        eventSource.close();
-        setTimeout(connectEvents, 2500);
-      };
+    function startAutoRefresh() {
+      clearInterval(refreshTimer);
+      refreshTimer = setInterval(loadHistory, 5000);
     }
 
     async function showApp() {
       login.classList.add("hidden");
       app.classList.remove("hidden");
       await loadHistory();
-      connectEvents();
+      startAutoRefresh();
     }
 
     async function checkSession() {
@@ -653,13 +628,12 @@
 
     logoutBtn.addEventListener("click", async () => {
       await api("/api/auth/logout", { method: "POST", body: "{}" });
-      if (eventSource) eventSource.close();
+      clearInterval(refreshTimer);
       app.classList.add("hidden");
       login.classList.remove("hidden");
     });
 
     reloadBtn.addEventListener("click", loadHistory);
-    clearLiveBtn.addEventListener("click", () => liveList.replaceChildren());
     eventFilter.addEventListener("change", loadHistory);
     limitFilter.addEventListener("change", loadHistory);
     agentFilter.addEventListener("change", loadHistory);
