@@ -1,8 +1,0 @@
-{
-    "agent_id": "agent-001",
-    "watch_paths": [
-        "location to monitor"
-    ],
-    "backend_url": "http://127.0.0.1:8000/api/report"
-}
-

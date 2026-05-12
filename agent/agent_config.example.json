@@ -1,0 +1,16 @@
+{
+  "agent_id": "agent-001",
+  "backend_url": "http://127.0.0.1:8000/api/report",
+  "api_key": "change-me-agent-key",
+  "watch_paths": [
+    "C:/path/to/monitor"
+  ],
+  "scan_interval_seconds": 5,
+  "max_file_size_mb": 100,
+  "ignore_names": [
+    ".git",
+    "__pycache__",
+    "node_modules",
+    ".venv"
+  ]
+}

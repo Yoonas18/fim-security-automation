@@ -1,205 +1,147 @@
-# 🔍 FIM & Security Automation Platform
+# FIM Security Watchdog
 
-> A Python-based File Integrity Monitoring system with real-time alerting, centralized event collection, and n8n-powered security automation workflows.
+A defensive File Integrity Monitoring platform with a Python agent, FastAPI event collector, authenticated dashboard, SQLite event history, and optional n8n alert forwarding.
 
-![Python](https://img.shields.io/badge/Python-3776AB?style=flat&logo=python&logoColor=white)
-![n8n](https://img.shields.io/badge/n8n-EA4B71?style=flat&logo=n8n&logoColor=white)
-![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=flat&logo=fastapi&logoColor=white)
-![Security](https://img.shields.io/badge/Security-Tool-red?style=flat)
-![License](https://img.shields.io/badge/License-MIT-green?style=flat)
+This project is built for learning and portfolio demonstration, but the core flow mirrors real host-based detection work: an agent hashes files, detects changes, sends structured events to a server, and the dashboard shows live security activity.
 
----
+## Features
 
-## 📌 Overview
+- SHA-256 file integrity monitoring
+- Detection for created, modified, and deleted files
+- Agent API key protection
+- Authenticated web dashboard
+- Live Server-Sent Events alert stream
+- SQLite event history
+- Filtering by agent and event type
+- Severity labels for suspicious or sensitive paths
+- Optional n8n webhook forwarding
+- Safe config examples so secrets are not committed
 
-This project simulates a real-world **File Integrity Monitoring (FIM)** system — the kind used in enterprise SOC environments to detect unauthorized changes to critical files. It uses **SHA-256 hashing** to baseline files and continuously monitors for modifications, deletions, or new file creations. When a change is detected, automated workflows trigger **instant Telegram alerts** via **n8n**.
+## Project structure
 
-This is a practical demonstration of:
-- Host-based intrusion detection concepts
-- Security automation using n8n workflows
-- SOC-style event collection and alerting
-- Python security tool development
-
----
-
-## 🏗 Architecture
-
+```text
+fim-security-automation/
+  agent/
+    agent.py
+    agent_config.example.json
+  backend/
+    __init__.py
+    database.py
+    events.py
+    main.py
+    schemas.py
+  frontend/
+    index.html
+  n8n-workflows/
+    README.md
+  .env.example
+  .gitignore
+  LICENSE
+  README.md
+  requirements.txt
 ```
-┌─────────────────────┐     events      ┌──────────────────┐
-│   FIM Monitor       │ ─────────────▶  │  FastAPI Server  │
-│  (Python agent)     │                 │  (Event Collector)│
-│                     │                 └────────┬─────────┘
-│  • SHA-256 hashing  │                          │
-│  • Baseline compare │                          ▼
-│  • Change detection │                 ┌──────────────────┐
-└─────────────────────┘                 │   n8n Workflow   │
-                                        │  (Automation)    │
-                                        │                  │
-                                        │  • Parse event   │
-                                        │  • Format alert  │
-                                        │  • Send Telegram │
-                                        └──────────────────┘
-```
 
----
+## Quick start
 
-## ✨ Features
-
-- ✅ **SHA-256 file hashing** — cryptographically detects any file modification
-- ✅ **Real-time monitoring** — continuously watches specified directories
-- ✅ **Baseline management** — create, store, and compare file hash baselines
-- ✅ **Change detection** — detects file modifications, new files, and deletions
-- ✅ **Centralized event collection** — FastAPI server collects events from the monitoring agent
-- ✅ **Automated alerting** — n8n workflow sends instant Telegram notifications
-- ✅ **Structured logging** — all events stored with timestamps for investigation
-
----
-
-## 🛠 Tech stack
-
-| Component | Technology |
-|-----------|------------|
-| Monitoring agent | Python 3 |
-| Event collector API | FastAPI |
-| Automation workflows | n8n |
-| Alert channel | Telegram Bot |
-| Hash algorithm | SHA-256 |
-
----
-
-## 📁 Project structure
-
-```
-FIM-Watchdog/
-├── agent/
-│   ├── agent.py                  
-│   ├── agent_config.json         
-│   └── agent_config.example.json ← template for other users
-├── backend/
-│   ├── main.py                   
-│   ├── database.py               
-│   ├── events.py                 
-│   └── schemas.py                
-├── frontend/
-│   └── index.html                ← UI
-            
-├── README.md                     ← full professional README
-├── .gitignore                    ← blocks .db files, __pycache__, config
-└── LICENSE                       ← MIT license
-
-## 🚀 Getting started
-
-### Prerequisites
-
-- Python 3.8+
-- n8n (self-hosted or cloud)
-- Telegram Bot Token ([create one via @BotFather](https://t.me/botfather))
-
-### Installation
+Create and activate a virtual environment, then install the dependencies:
 
 ```bash
-# 1. Clone the repository
-git clone https://github.com/Yoonas18/fim-security-automation.git
-cd fim-security-automation
-
-# 2. Install dependencies
+python -m venv .venv
+.venv\Scripts\activate
 pip install -r requirements.txt
-
-# 3. Configure monitored paths
-nano agent/config.py
-# Set MONITOR_PATHS = ["/path/to/watch"]
-# Set API_URL = "http://localhost:8000"
-
-# 4. Start the event collection server
-uvicorn server.main:app --reload --port 8000
-
-# 5. Create the initial baseline
-python agent/baseline.py --create
-
-# 6. Start the FIM monitor
-python agent/fim_monitor.py
 ```
 
-### n8n workflow setup
+Set environment variables. You can copy `.env.example` into your shell or use your preferred environment manager.
 
-1. Open your n8n instance
-2. Go to **Workflows → Import**
-3. Import `n8n-workflows/fim_alert_workflow.json`
-4. Add your Telegram Bot Token and Chat ID in the Telegram node
-5. Activate the workflow
+Important values:
 
----
-
-## 📸 How it works
-
-### 1. Baseline creation
-The agent scans all monitored directories and stores SHA-256 hashes of every file:
-```
-[INFO] Baseline created: 47 files hashed
-[INFO] Baseline saved to: baseline.json
+```text
+FIM_ADMIN_USERNAME=admin
+FIM_ADMIN_PASSWORD=change-this-dashboard-password
+FIM_SESSION_SECRET=change-this-long-random-session-secret
+FIM_AGENT_API_KEY=change-this-agent-api-key
+FIM_WEBHOOK_URL=
 ```
 
-### 2. Continuous monitoring
-The agent re-hashes files at set intervals and compares against the baseline:
-```
-[ALERT] MODIFIED  → /etc/passwd  (hash mismatch)
-[ALERT] NEW FILE  → /tmp/suspicious.sh
-[INFO]  UNCHANGED → /var/log/syslog
+Start the backend from the repository root:
+
+```bash
+uvicorn backend.main:app --reload --port 8000
 ```
 
-### 3. Event sent to FastAPI server
+Open the dashboard:
+
+```text
+http://127.0.0.1:8000
+```
+
+## Agent setup
+
+Copy the example config:
+
+```bash
+copy agent\agent_config.example.json agent\agent_config.json
+```
+
+Edit `agent/agent_config.json`:
+
 ```json
 {
-  "event_type": "MODIFIED",
-  "file_path": "/etc/passwd",
-  "old_hash": "a3f5c...",
-  "new_hash": "9b2d1...",
-  "timestamp": "2025-08-14T10:32:11Z"
+  "agent_id": "agent-001",
+  "backend_url": "http://127.0.0.1:8000/api/report",
+  "api_key": "change-this-agent-api-key",
+  "watch_paths": ["C:/path/to/monitor"],
+  "scan_interval_seconds": 5,
+  "max_file_size_mb": 100,
+  "ignore_names": [".git", "__pycache__", "node_modules", ".venv"]
 }
 ```
 
-### 4. n8n triggers Telegram alert
-```
-🚨 FIM ALERT
-Type: File Modified
-Path: /etc/passwd
-Time: 2025-08-14 10:32:11
-Hash changed — investigate immediately!
+Run the agent:
+
+```bash
+python agent\agent.py
 ```
 
----
+## API overview
 
-## 🔒 Security use cases
+Dashboard endpoints require the login session cookie:
 
-This tool demonstrates detection of:
-- Unauthorized modification of system files (e.g. `/etc/passwd`, `/etc/sudoers`)
-- Web shell uploads to web server directories
-- Persistence mechanisms that drop files on disk
-- Configuration tampering by insiders or malware
+- `POST /api/auth/login`
+- `POST /api/auth/logout`
+- `GET /api/auth/me`
+- `GET /api/history`
+- `GET /api/stats`
+- `GET /api/events`
 
----
+Agent reporting requires the `X-Agent-Key` header:
 
-## 📚 Learning outcomes
+```http
+POST /api/report
+X-Agent-Key: change-this-agent-api-key
+```
 
-By building and running this project you gain practical experience with:
-- Host-based intrusion detection (HIDS) concepts
-- Cryptographic file integrity verification
-- RESTful API design for security event collection
-- Security automation and alerting workflows
-- Incident response data collection
+Example payload:
 
----
+```json
+{
+  "agent_id": "agent-001",
+  "file": "C:/important/config.txt",
+  "event": "file_modified",
+  "hash": "sha256-hash",
+  "size": 1024
+}
+```
 
-## 🙋 Author
+## Security notes
 
-**Yoonus K Y** — Cybersecurity Researcher & Penetration Tester
+- Change all default secrets before using the project outside a local demo.
+- Keep `.env`, `agent/agent_config.json`, and database files out of Git.
+- Use HTTPS or a trusted private network if agents report to a remote backend.
+- Monitor only systems and folders you own or have explicit permission to monitor.
+- This project is for defensive security education and authorized monitoring.
 
-[![Portfolio](https://img.shields.io/badge/Portfolio-1B3A6B?style=flat&logo=githubpages&logoColor=white)](https://yoonas18.github.io/portfolio)
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=flat&logo=linkedin&logoColor=white)](https://linkedin.com/in/yoonusky)
-[![Bugcrowd](https://img.shields.io/badge/Bugcrowd-F26822?style=flat&logo=bugcrowd&logoColor=white)](https://bugcrowd.com/Yoonas18)
+## Author
 
----
+Yoonus K Y
 
-## ⚠️ Disclaimer
-
-This tool is built for **educational and defensive security purposes only**. Only monitor systems you own or have explicit written permission to monitor.

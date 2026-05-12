@@ -1,0 +1,520 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>FIM Security Watchdog</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --panel: #151b23;
+      --panel-soft: #1b2430;
+      --border: #303946;
+      --text: #e6edf3;
+      --muted: #8b949e;
+      --accent: #2f81f7;
+      --green: #3fb950;
+      --yellow: #d29922;
+      --orange: #f0883e;
+      --red: #f85149;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+    }
+
+    button, input, select {
+      font: inherit;
+    }
+
+    button {
+      border: 1px solid var(--border);
+      background: var(--panel-soft);
+      color: var(--text);
+      border-radius: 6px;
+      padding: 8px 11px;
+      cursor: pointer;
+    }
+
+    button.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: white;
+    }
+
+    input, select {
+      width: 100%;
+      border: 1px solid var(--border);
+      background: #0b1118;
+      color: var(--text);
+      border-radius: 6px;
+      padding: 9px 10px;
+    }
+
+    .hidden { display: none !important; }
+
+    .login {
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+    }
+
+    .login-box {
+      width: min(420px, 100%);
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 22px;
+    }
+
+    .login-box h1 {
+      margin: 0 0 6px;
+      font-size: 22px;
+    }
+
+    .login-box p {
+      color: var(--muted);
+      margin: 0 0 18px;
+      line-height: 1.45;
+    }
+
+    .field {
+      display: grid;
+      gap: 7px;
+      margin-bottom: 12px;
+    }
+
+    .field label {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .shell {
+      min-height: 100vh;
+      display: grid;
+      grid-template-rows: auto auto 1fr;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border);
+      background: #0b1118;
+    }
+
+    h1 {
+      font-size: 18px;
+      margin: 0;
+    }
+
+    .status {
+      margin-left: auto;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .toolbar {
+      display: grid;
+      grid-template-columns: 1fr 180px 120px auto;
+      gap: 10px;
+      padding: 12px 18px;
+      border-bottom: 1px solid var(--border);
+      background: var(--panel);
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(120px, 1fr));
+      gap: 10px;
+      padding: 14px 18px 0;
+    }
+
+    .stat {
+      border: 1px solid var(--border);
+      background: var(--panel);
+      border-radius: 8px;
+      padding: 12px;
+    }
+
+    .stat span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 4px;
+    }
+
+    .stat strong {
+      font-size: 24px;
+    }
+
+    main {
+      display: grid;
+      grid-template-columns: 42% 1fr;
+      gap: 14px;
+      padding: 14px 18px 18px;
+      min-height: 0;
+    }
+
+    .pane {
+      min-height: 0;
+      display: grid;
+      grid-template-rows: auto 1fr;
+      border: 1px solid var(--border);
+      background: var(--panel);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .pane-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 11px 12px;
+      border-bottom: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .list {
+      overflow: auto;
+      min-height: 340px;
+    }
+
+    .event {
+      display: grid;
+      gap: 7px;
+      padding: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .event-head {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      min-width: 0;
+    }
+
+    .agent {
+      font-weight: 700;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      min-height: 22px;
+      border-radius: 999px;
+      padding: 2px 8px;
+      font-size: 12px;
+      background: #1f2a37;
+      color: var(--muted);
+    }
+
+    .low { color: var(--green); }
+    .medium { color: var(--yellow); }
+    .high { color: var(--orange); }
+    .critical { color: var(--red); }
+
+    .file {
+      color: #c9d1d9;
+      font-family: "Cascadia Mono", Consolas, monospace;
+      font-size: 13px;
+      line-height: 1.45;
+      overflow-wrap: anywhere;
+    }
+
+    .meta {
+      color: var(--muted);
+      font-size: 12px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .empty {
+      padding: 18px;
+      color: var(--muted);
+    }
+
+    .error {
+      color: var(--red);
+      min-height: 20px;
+      font-size: 13px;
+      margin-top: 10px;
+    }
+
+    @media (max-width: 900px) {
+      .toolbar, main, .stats {
+        grid-template-columns: 1fr;
+      }
+
+      .status {
+        margin-left: 0;
+      }
+
+      header {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <section id="login" class="login">
+    <form id="loginForm" class="login-box">
+      <h1>FIM Security Watchdog</h1>
+      <p>Sign in to view file integrity events, agent activity, and alert severity.</p>
+      <div class="field">
+        <label for="username">Username</label>
+        <input id="username" autocomplete="username" required />
+      </div>
+      <div class="field">
+        <label for="password">Password</label>
+        <input id="password" type="password" autocomplete="current-password" required />
+      </div>
+      <button class="primary" type="submit">Sign in</button>
+      <div id="loginError" class="error"></div>
+    </form>
+  </section>
+
+  <section id="app" class="shell hidden">
+    <header>
+      <div>
+        <h1>FIM Security Watchdog</h1>
+      </div>
+      <div id="status" class="status">Connecting...</div>
+      <button id="logout">Logout</button>
+    </header>
+
+    <div class="toolbar">
+      <input id="agentFilter" placeholder="Filter by agent id" />
+      <select id="eventFilter">
+        <option value="">All event types</option>
+        <option value="file_created">Created</option>
+        <option value="file_modified">Modified</option>
+        <option value="file_deleted">Deleted</option>
+      </select>
+      <select id="limitFilter">
+        <option value="50">50 rows</option>
+        <option value="200" selected>200 rows</option>
+        <option value="500">500 rows</option>
+      </select>
+      <button id="reload">Reload</button>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><span>Total events</span><strong id="totalEvents">0</strong></div>
+      <div class="stat"><span>Created</span><strong id="createdCount">0</strong></div>
+      <div class="stat"><span>Modified</span><strong id="modifiedCount">0</strong></div>
+      <div class="stat"><span>Deleted</span><strong id="deletedCount">0</strong></div>
+    </div>
+
+    <main>
+      <section class="pane">
+        <div class="pane-title">
+          <span>Live alerts</span>
+          <button id="clearLive">Clear</button>
+        </div>
+        <div id="liveList" class="list"></div>
+      </section>
+
+      <section class="pane">
+        <div class="pane-title">
+          <span>Event history</span>
+          <span id="historyCount">0 items</span>
+        </div>
+        <div id="historyList" class="list"></div>
+      </section>
+    </main>
+  </section>
+
+  <script>
+    const login = document.getElementById("login");
+    const app = document.getElementById("app");
+    const loginForm = document.getElementById("loginForm");
+    const loginError = document.getElementById("loginError");
+    const statusEl = document.getElementById("status");
+    const liveList = document.getElementById("liveList");
+    const historyList = document.getElementById("historyList");
+    const historyCount = document.getElementById("historyCount");
+    const agentFilter = document.getElementById("agentFilter");
+    const eventFilter = document.getElementById("eventFilter");
+    const limitFilter = document.getElementById("limitFilter");
+    const reloadBtn = document.getElementById("reload");
+    const clearLiveBtn = document.getElementById("clearLive");
+    const logoutBtn = document.getElementById("logout");
+    let eventSource;
+
+    function text(value) {
+      return value === null || value === undefined || value === "" ? "-" : String(value);
+    }
+
+    function formatTime(seconds) {
+      return seconds ? new Date(seconds * 1000).toLocaleString() : "-";
+    }
+
+    function makeEventRow(item) {
+      const row = document.createElement("article");
+      row.className = "event";
+
+      const head = document.createElement("div");
+      head.className = "event-head";
+
+      const agent = document.createElement("span");
+      agent.className = "agent";
+      agent.textContent = text(item.agent);
+
+      const event = document.createElement("span");
+      event.className = "badge";
+      event.textContent = text(item.event);
+
+      const severity = document.createElement("span");
+      severity.className = `badge ${item.severity || ""}`;
+      severity.textContent = text(item.severity);
+
+      head.append(agent, event, severity);
+
+      const file = document.createElement("div");
+      file.className = "file";
+      file.textContent = text(item.file);
+
+      const meta = document.createElement("div");
+      meta.className = "meta";
+      const time = document.createElement("span");
+      time.textContent = formatTime(item.time);
+      const size = document.createElement("span");
+      size.textContent = item.size ? `${item.size} bytes` : "size unknown";
+      const hash = document.createElement("span");
+      hash.textContent = item.hash ? `sha256 ${item.hash.slice(0, 16)}...` : "hash unavailable";
+      meta.append(time, size, hash);
+
+      row.append(head, file, meta);
+      return row;
+    }
+
+    function renderList(target, items) {
+      target.replaceChildren();
+      if (!items.length) {
+        const empty = document.createElement("div");
+        empty.className = "empty";
+        empty.textContent = "No events found.";
+        target.append(empty);
+        return;
+      }
+
+      items.forEach(item => target.append(makeEventRow(item)));
+    }
+
+    async function api(path, options = {}) {
+      const response = await fetch(path, {
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        ...options
+      });
+      if (!response.ok) throw new Error(await response.text());
+      return response.json();
+    }
+
+    async function loadStats() {
+      const stats = await api("/api/stats");
+      document.getElementById("totalEvents").textContent = stats.total || 0;
+      document.getElementById("createdCount").textContent = stats.by_event.file_created || 0;
+      document.getElementById("modifiedCount").textContent = stats.by_event.file_modified || 0;
+      document.getElementById("deletedCount").textContent = stats.by_event.file_deleted || 0;
+    }
+
+    async function loadHistory() {
+      const params = new URLSearchParams({ limit: limitFilter.value });
+      if (eventFilter.value) params.set("event", eventFilter.value);
+      if (agentFilter.value.trim()) params.set("agent", agentFilter.value.trim());
+      const items = await api(`/api/history?${params.toString()}`);
+      renderList(historyList, items);
+      historyCount.textContent = `${items.length} items`;
+      await loadStats();
+    }
+
+    function connectEvents() {
+      if (eventSource) eventSource.close();
+      statusEl.textContent = "Connecting...";
+      eventSource = new EventSource("/api/events");
+
+      eventSource.onopen = () => {
+        statusEl.textContent = "Connected";
+        statusEl.style.color = "var(--green)";
+      };
+
+      eventSource.onmessage = async (message) => {
+        const event = JSON.parse(message.data);
+        liveList.prepend(makeEventRow(event));
+        await loadStats();
+      };
+
+      eventSource.onerror = () => {
+        statusEl.textContent = "Disconnected, retrying...";
+        statusEl.style.color = "var(--yellow)";
+        eventSource.close();
+        setTimeout(connectEvents, 2500);
+      };
+    }
+
+    async function showApp() {
+      login.classList.add("hidden");
+      app.classList.remove("hidden");
+      await loadHistory();
+      connectEvents();
+    }
+
+    async function checkSession() {
+      try {
+        await api("/api/auth/me");
+        await showApp();
+      } catch {
+        login.classList.remove("hidden");
+        app.classList.add("hidden");
+      }
+    }
+
+    loginForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      loginError.textContent = "";
+      try {
+        await api("/api/auth/login", {
+          method: "POST",
+          body: JSON.stringify({
+            username: document.getElementById("username").value,
+            password: document.getElementById("password").value
+          })
+        });
+        await showApp();
+      } catch {
+        loginError.textContent = "Invalid username or password.";
+      }
+    });
+
+    logoutBtn.addEventListener("click", async () => {
+      await api("/api/auth/logout", { method: "POST", body: "{}" });
+      if (eventSource) eventSource.close();
+      app.classList.add("hidden");
+      login.classList.remove("hidden");
+    });
+
+    reloadBtn.addEventListener("click", loadHistory);
+    clearLiveBtn.addEventListener("click", () => liveList.replaceChildren());
+    eventFilter.addEventListener("change", loadHistory);
+    limitFilter.addEventListener("change", loadHistory);
+    agentFilter.addEventListener("change", loadHistory);
+
+    checkSession();
+  </script>
+</body>
+</html>
